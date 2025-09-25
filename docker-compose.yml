@@ -1,0 +1,20 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: ibama_api_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ibama_db                
+    ports:
+      - "3306:3306"
+    volumes:
+      - ibama_db_data:/var/lib/mysql
+    healthcheck:
+        test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+        timeout: 20s
+        retries: 10
+
+volumes:
+  ibama_db_data:
+    driver: local
