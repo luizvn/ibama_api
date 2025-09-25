@@ -4,8 +4,6 @@ from sqlalchemy import String, DECIMAL, DateTime, Date, TEXT, Index
 from decimal import Decimal
 from datetime import datetime, date
 
-
-
 class Infraction(Base):
     __table_name__ = "infractions"
 
