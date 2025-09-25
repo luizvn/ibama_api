@@ -12,12 +12,16 @@ anyio==4.11.0
     # via
     #   starlette
     #   watchfiles
+cffi==2.0.0
+    # via cryptography
 click==8.3.0
     # via uvicorn
 colorama==0.4.6
     # via
     #   click
     #   uvicorn
+cryptography==46.0.1
+    # via -r requirements.in
 fastapi==0.117.1
     # via -r requirements.in
 greenlet==3.2.4
@@ -36,6 +40,8 @@ numpy==2.3.3
     # via pandas
 pandas==2.3.2
     # via -r requirements.in
+pycparser==2.23
+    # via cffi
 pydantic==2.11.9
     # via
     #   fastapi
