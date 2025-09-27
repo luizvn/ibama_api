@@ -2,8 +2,11 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
-from app.api.routers import auth
+from app.api.routers import auth, infractions
+from app.core.logging_config import setup_logging
 
+
+setup_logging()
 
 app = FastAPI(
     title="API de Autos de Infração - IBAMA",
@@ -12,6 +15,7 @@ app = FastAPI(
 )
 
 app.include_router(auth.router)
+app.include_router(infractions.router)
 
 @app.get("/")
 def read_root() -> dict[str, str]:
