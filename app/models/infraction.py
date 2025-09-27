@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime, date
 
 class Infraction(Base):
-    __table_name__ = "infractions"
+    __tablename__ = "infractions"
 
     id: Mapped[bigintpk] # Mapeado de: SEQ_AUTO_INFRACAO
     infraction_number: Mapped[str] = mapped_column(String(255), unique=True, nullable=False) # Mapeado de: NUM_AUTO_INFRACAO

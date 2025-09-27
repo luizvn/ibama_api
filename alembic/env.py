@@ -2,7 +2,10 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+
 from app.models.base import Base
+from app.models.user import User  # noqa: F401
+from app.models.infraction import Infraction  # noqa: F401
 
 from alembic import context
 
