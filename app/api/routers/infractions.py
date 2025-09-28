@@ -1,5 +1,4 @@
 from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, File, HTTPException
-from sqlalchemy.orm import Session
 from app.api import deps
 from app.services.ingestion_service import IngestionService
 from app.models.user import User  # noqa: F401
@@ -18,7 +17,6 @@ router = APIRouter(prefix="/infractions", tags=["Infractions"])
 )
 def upload_infractions_csv(
     background_tasks: BackgroundTasks,
-    db: Session = Depends(deps.get_db),
     current_user = Depends(deps.get_current_active_user),
     file: UploadFile = File(..., description="Arquivo CSV contendo os dados das infrações.")
 ):  

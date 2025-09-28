@@ -5,7 +5,6 @@ from sqlalchemy import insert
 from app.models.infraction import Infraction
 import os
 import numpy as np
-from sqlalchemy import select
 
 
 logger = logging.getLogger(__name__)
@@ -69,41 +68,31 @@ class IngestionService:
                             logger.info("Nenhuma nova infração para inserir neste lote.")
                             continue
 
-                        is_duplicated = chunk_df['infraction_number'].str.lower().duplicated(keep='first')
-                        chunk_df = chunk_df[~is_duplicated]
-
-                        infraction_numbers_in_chunk = chunk_df['infraction_number'].tolist()
-
-                        query = select(Infraction.infraction_number).where(
-                            Infraction.infraction_number.in_(infraction_numbers_in_chunk)
-                        )
-                        existing_numbers = set(db_session.scalars(query).all())
-
-                        existing_numbers_lower = {num.lower() for num in existing_numbers if num}
-
-                        chunk_df = chunk_df[~chunk_df['infraction_number'].str.lower().isin(existing_numbers_lower)]
-
-                        if chunk_df.empty:
-                            logger.info("Nenhuma nova infração para inserir neste lote.")
-                            continue
-
                         chunk_df['fine_value'] = pd.to_numeric(
                             chunk_df['fine_value'].str.replace(',', '.', regex=False),
                             errors='coerce'
                         )
 
-                        processed_chunk = chunk_df.replace({np.nan: None})
+                        chunk_df['infraction_datetime'] = pd.to_datetime(chunk_df['infraction_datetime'], errors='coerce')
+                        chunk_df['last_updated_date'] = pd.to_datetime(chunk_df['last_updated_date'], errors='coerce')
+
+                        processed_chunk = chunk_df.replace({np.nan: None, pd.NaT: None})
 
                         data_to_insert = processed_chunk.to_dict(orient='records')
                         if not data_to_insert:
                             continue
 
-                        db_session.execute(insert(Infraction), data_to_insert)
+                        stmt = insert(Infraction).values(data_to_insert)
+
+                        stmt = stmt.prefix_with("IGNORE")
+
+                        db_session.execute(stmt)
                         
                         total_rows_inserted += len(data_to_insert)
-                        logger.info(f"Lote inserido. Total de linhas processadas: {total_rows_inserted}")
+                        logger.info(f"Total de linhas processadas: {total_rows_inserted}")
                         
                     db_session.commit()
+                    logger.info(f"Commit finalizado com sucesso para o arquivo '{os.path.basename(file_path)}'.")
                 
             except Exception as e:
                 logger.error(f"Erro durante o processamento do CSV: {e}")
