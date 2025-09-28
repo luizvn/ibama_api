@@ -40,7 +40,7 @@ def upload_infractions_csv(
         f"enviou o arquivo '{file.filename}' para processamento."
     )
     
-    service = IngestionService(db)
+    service = IngestionService()
     background_tasks.add_task(service.process_csv, temp_file_path)
 
     return{
