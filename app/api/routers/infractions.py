@@ -4,6 +4,8 @@ from app.api import deps
 from app.services.ingestion_service import IngestionService
 from app.models.user import User  # noqa: F401
 import logging
+import tempfile
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +28,20 @@ def upload_infractions_csv(
             detail="Arquivo inválido ou sem nome. Apenas arquivos .csv são aceitos."
         )
     
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            shutil.copyfileobj(file.file, temp_file)
+            temp_file_path = temp_file.name
+    finally:
+        file.file.close()
+
     logger.info(
         f"Usuário '{current_user.username}' (ID: {current_user.id}) "
         f"enviou o arquivo '{file.filename}' para processamento."
     )
     
     service = IngestionService(db)
-    background_tasks.add_task(service.process_csv, file)
+    background_tasks.add_task(service.process_csv, temp_file_path)
 
     return{
         "message": "Arquivo recebido. O processamento será feito em segundo plano.",

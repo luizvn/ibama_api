@@ -28,7 +28,7 @@ class Infraction(Base):
     description: Mapped[str] = mapped_column(TEXT, nullable=True) # Mapeado de: DES_AUTO_INFRACAO
     infraction_type_description: Mapped[str] = mapped_column(TEXT, nullable=True) # Mapeado de: DES_INFRACAO
 
-    municipality: Mapped[str] = mapped_column(String(255), nullable=False) # Mapeado de: MUNICIPIO
+    municipality: Mapped[str] = mapped_column(String(255), nullable=True) # Mapeado de: MUNICIPIO
     state: Mapped[str] = mapped_column(String(2), nullable=False) # Mapeado de: UF
     location_description: Mapped[str] = mapped_column(TEXT, nullable=True) # Mapeado de: DES_LOCAL_INFRACAO
     longitude: Mapped[Decimal] = mapped_column(DECIMAL(11, 8), nullable=True) # Mapeado de: NUM_LONGITUDE_AUTO

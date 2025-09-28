@@ -19,7 +19,7 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "ibama_api": {"handlers": ["default"], "level": "INFO", "propagate": False},
+        "app": {"handlers": ["default"], "level": "INFO", "propagate": False},
         "uvicorn.error": {"level": "INFO"},
         "uvicorn.access": {"handlers": ["default"], "level": "INFO", "propagate": False},
     },
