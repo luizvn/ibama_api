@@ -1,10 +1,16 @@
-from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, status, BackgroundTasks, Depends, UploadFile, File, HTTPException, Query
 from app.api import deps
 from app.services.ingestion_service import IngestionService
 from app.models.user import User  # noqa: F401
 import logging
 import tempfile
 import shutil
+from app.schemas.infraction import InfractionPublic, Page
+from datetime import date
+from decimal import Decimal
+from app.services import infraction_service
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,4 +50,49 @@ def upload_infractions_csv(
     return{
         "message": "Arquivo recebido. O processamento será feito em segundo plano.",
         "filename": file.filename
+    }
+
+
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_model=Page[InfractionPublic],
+    summary="Busca e lista infrações com filtros e paginação.",
+)
+def get_infractions(
+    db = Depends(deps.get_db),
+    page: int = Query(1, ge=1, description="Número da página."),
+    size: int = Query(50, ge=1, le=200, description="Quantidade de itens por página."),
+    infraction_numer: str | None = Query(None, description="Busca por número da infração exato."),
+    offender_name: str | None = Query(None, description="Busca por parte do nome do infrator."),
+    offender_document: str | None = Query(None, description="Busca por CPF/CNPJ exato do infrator."),
+    start_date: date | None = Query(None, description="Data inicial da infração (YYYY-MM-DD)."),
+    end_date: date | None = Query(None, description="Data final da infração (YYYY-MM-DD)."),
+    min_fine_value: Decimal | None = Query(None, ge=0, description="Valor mínimo da multa."),
+    municipality: str | None = Query(None, description="Busca por parte do nome do município."),
+    state: str | None = Query(None, min_length=2, max_length=2, description="Busca por UF."),
+    affected_biomes: str | None = Query(None, description="Busca por biomas afetados.")
+):
+    skip = (page - 1) * size
+    
+    total, infractions_data = infraction_service.get_infractions(
+        db,
+        skip=skip,
+        limit=size,
+        infraction_numer=infraction_numer,
+        offender_name=offender_name,
+        offender_document=offender_document,
+        start_date=start_date,
+        end_date=end_date,
+        min_fine_value=min_fine_value,
+        municipality=municipality,
+        state=state,
+        affected_biomes=affected_biomes
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "size": len(infractions_data),
+        "items": infractions_data
     }
