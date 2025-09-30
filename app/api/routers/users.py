@@ -27,3 +27,30 @@ def create_user(
         )
 
     return created_user
+
+@router.patch(
+    "/{user_id}/deactivate",
+    status_code=status.HTTP_200_OK,
+    response_model=User,
+    summary="Desativa um usuário."
+)
+def deactivate_user(
+    user_id: int,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user)
+):  
+    if current_user == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Não é possível desativar o próprio usuário."
+        )
+
+    deactivated_user = user_service.deactivate_user(db, user_id)
+
+    if not deactivated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado."
+        )
+
+    return deactivated_user

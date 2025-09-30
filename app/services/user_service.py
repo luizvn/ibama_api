@@ -35,3 +35,14 @@ def create_user(db: Session, user: UserCreate) -> User | None:
     db.refresh(new_user)
 
     return new_user
+
+def deactivate_user(db: Session, user_id: int) -> User | None:
+    user_to_deactivate = db.get(User, user_id)
+    if not user_to_deactivate:
+        return None
+    
+    user_to_deactivate.is_active = False
+    db.commit()
+    db.refresh(user_to_deactivate)
+
+    return user_to_deactivate
