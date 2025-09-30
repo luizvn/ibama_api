@@ -5,7 +5,6 @@ from decimal import Decimal
 from sqlalchemy import select, func
 
 
-
 def get_infractions(
     db: Session, 
     *,

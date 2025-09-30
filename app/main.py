@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
-from app.api.routers import auth, infractions
+from app.api.routers import auth, infractions, users
 from app.core.logging_config import setup_logging
 
 
@@ -16,6 +16,7 @@ app = FastAPI(
 
 app.include_router(auth.router)
 app.include_router(infractions.router)
+app.include_router(users.router)
 
 @app.get("/")
 def read_root() -> dict[str, str]:

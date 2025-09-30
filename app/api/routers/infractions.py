@@ -11,7 +11,6 @@ from decimal import Decimal
 from app.services import infraction_service
 
 
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/infractions", tags=["Infractions"])
@@ -23,7 +22,7 @@ router = APIRouter(prefix="/infractions", tags=["Infractions"])
 )
 def upload_infractions_csv(
     background_tasks: BackgroundTasks,
-    current_user = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_active_user),
     file: UploadFile = File(..., description="Arquivo CSV contendo os dados das infrações.")
 ):  
     if not file.filename or not file.filename.endswith(".csv"):
@@ -54,7 +53,7 @@ def upload_infractions_csv(
 
 
 @router.get(
-    "/",
+    "",
     status_code=status.HTTP_200_OK,
     response_model=Page[InfractionPublic],
     summary="Busca e lista infrações com filtros e paginação.",
