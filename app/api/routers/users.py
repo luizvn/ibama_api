@@ -15,8 +15,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 )
 def create_user(
     user: UserCreate,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user)
+    db: Session = Depends(deps.get_db)
 ):
     created_user = user_service.create_user(db, user)
 
@@ -37,9 +36,9 @@ def create_user(
 def deactivate_user(
     user_id: int,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user)
+    current_active_admin: User = Depends(deps.get_current_active_admin_user)
 ):  
-    if current_user == user_id:
+    if current_active_admin == user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Não é possível desativar o próprio usuário."

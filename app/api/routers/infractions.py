@@ -22,7 +22,7 @@ router = APIRouter(prefix="/infractions", tags=["Infractions"])
 )
 def upload_infractions_csv(
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(deps.get_current_active_user),
+    current_active_admin: User = Depends(deps.get_current_active_admin_user),
     file: UploadFile = File(..., description="Arquivo CSV contendo os dados das infrações.")
 ):  
     if not file.filename or not file.filename.endswith(".csv"):
@@ -39,7 +39,7 @@ def upload_infractions_csv(
         file.file.close()
 
     logger.info(
-        f"Usuário '{current_user.username}' (ID: {current_user.id}) "
+        f"Usuário '{current_active_admin.username}' (ID: {current_active_admin.id}) "
         f"enviou o arquivo '{file.filename}' para processamento."
     )
     
@@ -60,6 +60,7 @@ def upload_infractions_csv(
 )
 def get_infractions(
     db = Depends(deps.get_db),
+    current_active_user: User = Depends(deps.get_current_active_user),
     page: int = Query(1, ge=1, description="Número da página."),
     size: int = Query(50, ge=1, le=200, description="Quantidade de itens por página."),
     infraction_number: str | None = Query(None, description="Busca por número da infração exato."),

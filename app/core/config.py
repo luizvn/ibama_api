@@ -17,4 +17,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
 
+    CORS_ORIGIN: list[str] = ["http://localhost:3000"]
+    
 settings = Settings() # type: ignore
