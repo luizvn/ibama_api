@@ -73,3 +73,15 @@ def activate_user(
     db.refresh(user_to_activate)
 
     return user_to_activate
+
+def get_all_users(
+    db: Session
+) -> list[User] | None:
+    
+    stmt = select(User)
+    users = list(db.scalars(stmt).all())
+
+    if not users:
+        return None
+
+    return users

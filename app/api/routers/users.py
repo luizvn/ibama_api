@@ -80,3 +80,23 @@ def activate_user(
         )
 
     return activated_user
+
+@router.get(
+    "",
+    status_code=status.HTTP_200_OK,
+    response_model=list[User],
+    summary="Lista todos os usuários."
+)
+def get_all_users(
+    db: Session = Depends(deps.get_db),
+    current_active_admin: User = Depends(deps.get_current_active_admin_user)
+):
+    users = user_service.get_all_users(db)
+
+    if not users:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nenhum usuário encontrado."
+        )
+
+    return users
