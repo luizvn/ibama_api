@@ -11,7 +11,10 @@ from app.core import security
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/login", response_model=Token)
+@router.post(
+    "/login", 
+    response_model=Token
+)
 def login_for_access_token(
     db: Session = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends()

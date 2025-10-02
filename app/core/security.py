@@ -6,13 +6,19 @@ from jose import jwt
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def verify_password(unhashed_password: str, hashed_password: str) -> bool:
+def verify_password(
+    unhashed_password: str, 
+    hashed_password: str
+) -> bool:
     return password_context.verify(unhashed_password, hashed_password)
 
-def get_password_hash(password: str) -> str:
+def get_password_hash(
+    password: str
+) -> str:
     return password_context.hash(password)
 
-def create_access_token(subject: Union[str, Any], 
+def create_access_token(
+    subject: Union[str, Any], 
     role: str, 
     expires_delta: timedelta | None = None
 ) -> str:

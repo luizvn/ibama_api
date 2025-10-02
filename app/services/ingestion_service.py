@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 
 class IngestionService:
 
-    def process_csv(self, file_path: str) -> None:
+    def process_csv(
+        self, 
+        file_path: str
+    ) -> None:
         logger.info(f"Iniciando o processamento do arquivo: {file_path}")
 
         with SessionLocal() as db_session:

@@ -53,3 +53,30 @@ def deactivate_user(
         )
 
     return deactivated_user
+
+@router.patch(
+    "/{user_id}/activate",
+    status_code=status.HTTP_200_OK,
+    response_model=User,
+    summary="Reativa um usuário."
+)
+def activate_user(
+    user_id: int,
+    db: Session = Depends(deps.get_db),
+    current_active_admin: User = Depends(deps.get_current_active_admin_user)
+):  
+    if current_active_admin == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Não é possível reativar o próprio usuário."
+        )
+
+    activated_user = user_service.activate_user(db, user_id)
+
+    if not activated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado."
+        )
+
+    return activated_user
