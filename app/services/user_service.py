@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.schemas.user import RoleUpdate, StatusUpdate, UserCreate
+from app.schemas.user import PasswordUpdate, RoleUpdate, StatusUpdate, UserCreate
 from app.core.security import verify_password
 from sqlalchemy import select
 from app.models.user import User
@@ -93,3 +93,23 @@ def update_user_role(
     db.refresh(user_to_update)
 
     return user_to_update
+
+def update_current_user_password(
+    db: Session, 
+    user_id: int, 
+    password_update: PasswordUpdate
+) -> bool:
+    user_to_update = db.get(User, user_id)
+
+    if not user_to_update:
+        return False
+
+    if not verify_password(password_update.old_password, user_to_update.hashed_password):
+        return False
+
+    user_to_update.hashed_password = get_password_hash(password_update.new_password)
+
+    db.commit()
+    db.refresh(user_to_update)
+
+    return True

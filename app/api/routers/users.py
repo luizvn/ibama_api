@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Response, status, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.user import RoleUpdate, StatusUpdate, UserCreate, User
+from app.schemas.user import PasswordUpdate, RoleUpdate, StatusUpdate, UserCreate, User
 from app.api import deps
 from app.services import user_service
 
@@ -113,5 +113,29 @@ def deactivate_current_user(
     current_active_user: User = Depends(deps.get_current_active_user)
 ):
     user_service.update_user_status(db, current_active_user.id, StatusUpdate(is_active=False))
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.patch(
+    "/me/password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Atualiza a senha do próprio usuário logado."
+)
+def update_current_user_password(
+    password_update: PasswordUpdate,
+    db: Session = Depends(deps.get_db),
+    current_active_user: User = Depends(deps.get_current_active_user)
+):
+    is_changed = user_service.update_current_user_password(
+        db, 
+        current_active_user.id, 
+        password_update
+    )
+
+    if not is_changed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta."
+        )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
