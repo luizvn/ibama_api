@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate, User
+from app.schemas.user import RoleUpdate, UserCreate, User
 from app.api import deps
 from app.services import user_service
 
@@ -100,3 +100,31 @@ def get_all_users(
         )
 
     return users
+
+@router.patch(
+    "/{user_id}/role",
+    status_code=status.HTTP_200_OK,
+    response_model=User,
+    summary="Atualiza o papel de um usuário."
+)
+def update_user_role(
+    user_id: int,
+    role: RoleUpdate,
+    db: Session = Depends(deps.get_db),
+    current_active_admin: User = Depends(deps.get_current_active_admin_user),
+):
+    if current_active_admin.id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Não é possível alterar o papel do próprio usuário."
+        )
+    
+    updated_user = user_service.update_user_role(db, user_id, role)
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário não encontrado."
+        )
+
+    return updated_user

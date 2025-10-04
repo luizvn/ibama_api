@@ -5,6 +5,9 @@ from app.models.user import UserRole
 class UserBase(BaseModel):
     username: str
 
+class RoleUpdate(BaseModel):
+    role: UserRole
+
 class UserCreate(UserBase):
     password: str
 

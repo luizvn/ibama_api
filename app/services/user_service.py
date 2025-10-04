@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate
+from app.schemas.user import RoleUpdate, UserCreate
 from app.core.security import verify_password
 from sqlalchemy import select
-from app.models.user import User 
+from app.models.user import User
 from app.core.security import get_password_hash
 
 
@@ -85,3 +85,20 @@ def get_all_users(
         return None
 
     return users
+
+def update_user_role(
+    db: Session, 
+    user_id: int,
+    role: RoleUpdate
+) -> User | None:
+    user_to_update = db.get(User, user_id)
+    
+    if not user_to_update:
+        return None
+    
+    user_to_update.role = role.role
+
+    db.commit()
+    db.refresh(user_to_update)
+
+    return user_to_update
