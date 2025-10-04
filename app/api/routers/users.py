@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, Response, status, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.user import RoleUpdate, StatusUpdate, UserCreate, User
 from app.api import deps
@@ -102,3 +102,16 @@ def update_user_role(
         )
 
     return updated_user
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Desativa a conta do próprio usuário logado."
+)
+def deactivate_current_user(
+    db: Session = Depends(deps.get_db),
+    current_active_user: User = Depends(deps.get_current_active_user)
+):
+    user_service.update_user_status(db, current_active_user.id, StatusUpdate(is_active=False))
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
