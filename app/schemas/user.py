@@ -8,6 +8,9 @@ class UserBase(BaseModel):
 class RoleUpdate(BaseModel):
     role: UserRole
 
+class StatusUpdate(BaseModel):
+    is_active: bool
+
 class UserCreate(UserBase):
     password: str
 

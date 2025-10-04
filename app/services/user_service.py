@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.schemas.user import RoleUpdate, UserCreate
+from app.schemas.user import RoleUpdate, StatusUpdate, UserCreate
 from app.core.security import verify_password
 from sqlalchemy import select
 from app.models.user import User
@@ -46,33 +46,22 @@ def create_user(
 
     return new_user
 
-def deactivate_user(
+def update_user_status(
     db: Session, 
-    user_id: int
+    user_id: int,
+    user_status: StatusUpdate
 ) -> User | None:
-    user_to_deactivate = db.get(User, user_id)
-    if not user_to_deactivate:
-        return None
-    
-    user_to_deactivate.is_active = False
-    db.commit()
-    db.refresh(user_to_deactivate)
+    user_to_update = db.get(User, user_id)
 
-    return user_to_deactivate
-
-def activate_user(
-    db: Session, 
-    user_id: int
-) -> User | None:
-    user_to_activate = db.get(User, user_id)
-    if not user_to_activate:
+    if not user_to_update:
         return None
 
-    user_to_activate.is_active = True
-    db.commit()
-    db.refresh(user_to_activate)
+    user_to_update.is_active = user_status.is_active
 
-    return user_to_activate
+    db.commit()
+    db.refresh(user_to_update)
+
+    return user_to_update
 
 def get_all_users(
     db: Session

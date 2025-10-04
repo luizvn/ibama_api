@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.schemas.user import RoleUpdate, UserCreate, User
+from app.schemas.user import RoleUpdate, StatusUpdate, UserCreate, User
 from app.api import deps
 from app.services import user_service
 
@@ -28,58 +28,32 @@ def create_user(
     return created_user
 
 @router.patch(
-    "/{user_id}/deactivate",
+    "/{user_id}/status",
     status_code=status.HTTP_200_OK,
     response_model=User,
-    summary="Desativa um usuário."
+    summary="Atualiza o status de um usuário."
 )
-def deactivate_user(
+def update_user_status(
     user_id: int,
+    user_status: StatusUpdate,
     db: Session = Depends(deps.get_db),
     current_active_admin: User = Depends(deps.get_current_active_admin_user)
 ):  
     if current_active_admin == user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Não é possível desativar o próprio usuário."
+            detail="Não é possível alterar o status do próprio usuário."
         )
 
-    deactivated_user = user_service.deactivate_user(db, user_id)
+    updated_user = user_service.update_user_status(db, user_id, user_status)
 
-    if not deactivated_user:
+    if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuário não encontrado."
         )
 
-    return deactivated_user
-
-@router.patch(
-    "/{user_id}/activate",
-    status_code=status.HTTP_200_OK,
-    response_model=User,
-    summary="Reativa um usuário."
-)
-def activate_user(
-    user_id: int,
-    db: Session = Depends(deps.get_db),
-    current_active_admin: User = Depends(deps.get_current_active_admin_user)
-):  
-    if current_active_admin == user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Não é possível reativar o próprio usuário."
-        )
-
-    activated_user = user_service.activate_user(db, user_id)
-
-    if not activated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuário não encontrado."
-        )
-
-    return activated_user
+    return updated_user
 
 @router.get(
     "",
