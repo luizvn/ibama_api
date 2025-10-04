@@ -31,6 +31,12 @@ def upload_infractions_csv(
             detail="Arquivo inválido ou sem nome. Apenas arquivos .csv são aceitos."
         )
     
+    if file.content_type not in ["text/csv", "application/vnd.ms-excel"]:
+         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tipo de arquivo inválido: {file.content_type}. Apenas arquivos CSV são aceitos."
+        )
+    
     try:
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             shutil.copyfileobj(file.file, temp_file)
