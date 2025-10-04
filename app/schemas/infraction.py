@@ -7,6 +7,7 @@ T = TypeVar("T")
 
 class InfractionPublic(BaseModel):
     id: int
+    source_id: int
     infraction_number: str
     process_number: str | None
     status: str

@@ -10,6 +10,7 @@ def get_infractions(
     *,
     skip: int = 0, 
     limit: int = 50,
+    source_id: int | None = None,
     infraction_number: str | None = None,
     offender_name: str | None = None,
     offender_document: str | None = None,
@@ -22,6 +23,9 @@ def get_infractions(
 ) -> tuple[int, list[Infraction]]:
     
     stmt = select(Infraction)
+
+    if source_id:
+        stmt = stmt.where(Infraction.source_id == source_id)
 
     if infraction_number:
         stmt = stmt.where(Infraction.infraction_number == infraction_number)

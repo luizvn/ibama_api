@@ -1,13 +1,15 @@
 from app.models.base import Base, bigintpk
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, DECIMAL, DateTime, Date, TEXT, Index
+from sqlalchemy import BigInteger, String, DECIMAL, DateTime, Date, TEXT, Index
 from decimal import Decimal
 from datetime import datetime, date
 
 class Infraction(Base):
     __tablename__ = "infractions"
 
-    id: Mapped[bigintpk] # Mapeado de: SEQ_AUTO_INFRACAO
+    id: Mapped[bigintpk]
+
+    source_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)# Mapeado de: SEQ_AUTO_INFRACAO
     infraction_number: Mapped[str] = mapped_column(String(255), unique=True, nullable=False) # Mapeado de: NUM_AUTO_INFRACAO
     process_number: Mapped[str] = mapped_column(String(255), index=True, nullable=True) # Mapeado de: NU_PROCESSO_FORMATADO
 

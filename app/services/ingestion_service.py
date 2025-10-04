@@ -1,7 +1,7 @@
 import logging
 from app.db.session import SessionLocal
 import pandas as pd
-from sqlalchemy import insert
+from sqlalchemy.dialects.mysql import insert
 from app.models.infraction import Infraction
 import os
 import numpy as np
@@ -20,7 +20,7 @@ class IngestionService:
         with SessionLocal() as db_session:
             try:
                 column_mapping = {
-                    'SEQ_AUTO_INFRACAO': 'id',
+                    'SEQ_AUTO_INFRACAO': 'source_id',
                     'NUM_AUTO_INFRACAO': 'infraction_number',
                     'NU_PROCESSO_FORMATADO': 'process_number',
                     'DES_STATUS_FORMULARIO': 'status',
@@ -44,7 +44,7 @@ class IngestionService:
                 }
                 
                 chunk_size = 5000
-                total_rows_inserted = 0
+                total_rows_affected = 0
          
                 with pd.read_csv(
                     file_path, 
@@ -59,6 +59,7 @@ class IngestionService:
 
                         required_columns = [
                             'infraction_number',
+                            'source_id',
                             'status',
                             'infraction_datetime',
                             'offender_name',
@@ -74,10 +75,12 @@ class IngestionService:
                         chunk_df['fine_value'] = pd.to_numeric(
                             chunk_df['fine_value'].str.replace(',', '.', regex=False),
                             errors='coerce'
-                        )
+                        ).fillna(0.0)
 
                         chunk_df['infraction_datetime'] = pd.to_datetime(chunk_df['infraction_datetime'], errors='coerce')
                         chunk_df['last_updated_date'] = pd.to_datetime(chunk_df['last_updated_date'], errors='coerce')
+
+                        chunk_df.drop_duplicates(subset=['infraction_number'], keep='last', inplace=True)
 
                         processed_chunk = chunk_df.replace({np.nan: None, pd.NaT: None})
 
@@ -85,14 +88,34 @@ class IngestionService:
                         if not data_to_insert:
                             continue
 
-                        stmt = insert(Infraction).values(data_to_insert)
+                        stmt_base = insert(Infraction.__table__) # type: ignore
+                        stmt_upsert = stmt_base.on_duplicate_key_update(
+                            source_id=stmt_base.inserted.source_id,
+                            process_number=stmt_base.inserted.process_number,
+                            status=stmt_base.inserted.status,
+                            sanction_type=stmt_base.inserted.sanction_type,
+                            gravity=stmt_base.inserted.gravity,
+                            fine_value=stmt_base.inserted.fine_value,
+                            infraction_datetime=stmt_base.inserted.infraction_datetime,
+                            fact_date=stmt_base.inserted.fact_date,
+                            system_launch_date=stmt_base.inserted.system_launch_date,
+                            last_updated_date=stmt_base.inserted.last_updated_date,
+                            offender_name=stmt_base.inserted.offender_name,
+                            offender_document=stmt_base.inserted.offender_document,
+                            description=stmt_base.inserted.description,
+                            infraction_type_description=stmt_base.inserted.infraction_type_description,
+                            municipality=stmt_base.inserted.municipality,
+                            state=stmt_base.inserted.state,
+                            location_description=stmt_base.inserted.location_description,
+                            longitude=stmt_base.inserted.longitude,
+                            latitude=stmt_base.inserted.latitude,
+                            affected_biomes=stmt_base.inserted.affected_biomes
+                        )
 
-                        stmt = stmt.prefix_with("IGNORE")
-
-                        db_session.execute(stmt)
+                        result = db_session.execute(stmt_upsert, data_to_insert)
                         
-                        total_rows_inserted += len(data_to_insert)
-                        logger.info(f"Total de linhas processadas: {total_rows_inserted}")
+                        total_rows_affected += result.rowcount
+                        logger.info(f"Lote processado. Total de linhas afetadas (inseridas/atualizadas) até agora: {total_rows_affected}")
                         
                     db_session.commit()
                     logger.info(f"Commit finalizado com sucesso para o arquivo '{os.path.basename(file_path)}'.")
