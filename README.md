@@ -15,6 +15,16 @@ Este projeto foi construído utilizando as mais modernas ferramentas do ecossist
 
 ---
 
+## 🗃️ Fonte dos Dados
+
+A API consome os dados públicos de autos de infração e sanções ambientais, que são abertamente disponibilizados pelo IBAMA através do Portal de Dados Abertos do Governo Federal.
+
+Os conjuntos de dados originais, em formato CSV, que servem de insumo para a funcionalidade de ingestão desta API podem ser encontrados e baixados no seguinte link:
+
+* **Link Oficial:** [**Fiscalização - Auto de Infração**](https://dados.gov.br/dados/conjuntos-dados/fiscalizacao-auto-de-infracao)
+
+---
+
 ## ✨ Principais Funcionalidades
 
 * **Ingestão de Dados em Larga Escala:** Endpoint otimizado para receber arquivos CSV de grande volume. O processamento é feito em *background* (assíncrono), utilizando **Pandas** para leitura em *chunks*, o que garante um baixo consumo de memória e alta performance.
@@ -133,6 +143,8 @@ Finalmente, inicie o servidor da API com Uvicorn:
 uvicorn app.main:app --reload
 ```
 A API estará disponível em `http://localhost:8000`. A documentação interativa (Swagger UI) pode ser acessada em `http://localhost:8000/docs`.
+
+---
 
 ## 🏛️ Arquitetura e Decisões de Design
 
