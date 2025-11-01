@@ -1,0 +1,17 @@
+[default]
+PROJECT_NAME = "API de Autos de Infração - IBAMA"
+
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+CORS_ORIGIN = ["http://localhost:3000"]
+
+DATABASE_URL = "@format mysql+asyncmy://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+[development]
+CORS_ORIGIN = ["*"]
+pass
+
+[production]
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
+pass

@@ -1,22 +1,35 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import ClassVar
+from dynaconf import Dynaconf, Validator
+from dynaconf.utils.boxing import DynaBox
 
-class Settings(BaseSettings):
+settings: DynaBox = Dynaconf(
+    env_switcher="APP_ENV",
+    default_env="development",
+    settings_files=["settings.toml", ".secrets.toml"],
+    environments=True,
+    load_dotenv=True,
+    envvar_prefix=False,
+    PROJECT_NAME="API de Autos de Infração - IBAMA",
+    ALGORITHM="HS256",
+)
 
-    model_config = SettingsConfigDict(
-        env_file=".env", 
-        env_file_encoding="utf-8", 
-        extra="ignore"
+settings.validators.register(
+    Validator(
+        "DATABASE_URL",
+        "SECRET_KEY",
+        "ALGORITHM",
+        "ACCESS_TOKEN_EXPIRE_MINUTES",
+        must_exist=True,
+    ),
+    Validator(
+        "SECRET_KEY",
+        min_len=32,
+        messages={"min_len": "SECRET_KEY precisa ter pelo menos 32 caracteres."}
+    ),
+    Validator(
+        "DATABASE_URL",
+        must_contain="asyncmy",
+        messages={"must_contain": "DATABASE_URL deve usar o driver 'asyncmy'"}
     )
+)
 
-    PROJECT_NAME: ClassVar[str] = "API de Autos de Infração - IBAMA"
-
-    DATABASE_URL: str
-
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
-    SECRET_KEY: str
-    ALGORITHM: str
-
-    CORS_ORIGIN: list[str] = ["http://localhost:3000"]
-    
-settings = Settings() # type: ignore
+settings.validators.validate()
