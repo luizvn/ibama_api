@@ -14,7 +14,33 @@ services:
         test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
         timeout: 20s
         retries: 10
+    networks:
+      - ibama_net
+
+  api:
+    build: . 
+    container_name: ibama_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: root
+      DB_NAME: ibama_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ibama_net
 
 volumes:
   ibama_db_data:
     driver: local
+
+networks:
+  ibama_net:
+    driver: bridge
