@@ -9,6 +9,7 @@ from app.schemas.infraction import InfractionPublic, Page
 from datetime import date
 from decimal import Decimal
 from app.services import infraction_service
+from app.db.session import AsyncSession
 
 
 logger = logging.getLogger(__name__)
@@ -64,8 +65,8 @@ def upload_infractions_csv(
     response_model=Page[InfractionPublic],
     summary="Busca e lista infrações com filtros e paginação.",
 )
-def get_infractions(
-    db = Depends(deps.get_db),
+async def get_infractions(
+    db: AsyncSession = Depends(deps.get_db),
     current_active_user: User = Depends(deps.get_current_active_user),
     page: int = Query(1, ge=1, description="Número da página."),
     size: int = Query(50, ge=1, le=200, description="Quantidade de itens por página."),
@@ -82,7 +83,7 @@ def get_infractions(
 ):
     skip = (page - 1) * size
     
-    total, infractions_data = infraction_service.get_infractions(
+    total, infractions_data = await infraction_service.get_infractions(
         db,
         skip=skip,
         limit=size,

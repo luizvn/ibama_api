@@ -5,7 +5,7 @@ from decimal import Decimal
 from sqlalchemy import select, func
 
 
-def get_infractions(
+async def get_infractions(
     db: Session, 
     *,
     skip: int = 0, 
@@ -55,11 +55,12 @@ def get_infractions(
         stmt = stmt.where(Infraction.affected_biomes.ilike(f"%{affected_biomes}%"))
 
     count_stmt = select(func.count()).select_from(stmt.subquery())
-    total = db.scalar(count_stmt) or 0
+    total_result = await db.execute(count_stmt)
+    total = total_result.scalar(count_stmt) or 0
 
     result_stmt = stmt.order_by(Infraction.infraction_datetime.desc()).offset(skip).limit(limit)
     
-    infractions = db.scalars(result_stmt).all()
+    infractions_result = await db.execute(result_stmt)
+    infractions = list(infractions_result.scalars().all())
 
     return total, list(infractions)
-
