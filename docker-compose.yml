@@ -6,10 +6,12 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASS}
       MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_DATABASE_TEST: ${DB_NAME}_test
     ports:
       - "3306:3306"
     volumes:
       - ibama_db_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -26,6 +28,7 @@ services:
     env_file: .env
     volumes:
       - ./app:/app/app
+      - ./tests:/app/tests
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       DB_HOST: ${DB_HOST}
@@ -35,6 +38,8 @@ services:
       DB_NAME: ${DB_NAME}
       SECRET_KEY: ${SECRET_KEY}
       DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL_TEST: ${DATABASE_URL_TEST}
+      PYTHONPATH: /app
     depends_on:
       db:
         condition: service_healthy

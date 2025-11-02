@@ -16,7 +16,7 @@ class UserBase(BaseModel):
         ...,
         min_length=4,
         max_length=15,
-        pattern=USERNAME_REGEX,  # <-- MELHORIA: Usando o argumento 'pattern'
+        pattern=USERNAME_REGEX,
         description="O nome de usuário deve ter entre 4 e 15 caracteres e pode conter letras minúsculas, números e underlines(_)."
     )
 
@@ -32,7 +32,7 @@ class PasswordUpdate(BaseModel):
         ...,
         min_length=8,
         max_length=15,
-        pattern=PASSWORD_REGEX, # <-- MELHORIA: Usando 'pattern' e removendo o validator
+        pattern=PASSWORD_REGEX,
         description="A nova senha deve ter entre 8 e 15 caracteres e pode conter letras, números e caracteres especiais."
     )
 
@@ -41,7 +41,7 @@ class UserCreate(UserBase):
         ...,
         min_length=8,
         max_length=15,
-        pattern=PASSWORD_REGEX, # <-- MELHORIA: Reutilizando o mesmo pattern
+        pattern=PASSWORD_REGEX,
         description="A senha deve ter entre 8 e 15 caracteres."
     )
 

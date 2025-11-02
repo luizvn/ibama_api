@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
 WORKDIR /app
+ENV PYTHONPATH=/app
 
 COPY requirements.in .
 
@@ -11,6 +12,7 @@ RUN pip install -r requirements.txt
 COPY settings.toml .
 
 COPY ./app /app/app
+COPY ./tests /app/tests
 
 EXPOSE 8000
 

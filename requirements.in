@@ -18,3 +18,5 @@ unidecode
 pymysql
 aiofiles
 python-multipart
+pytest
+pytest-anyio
