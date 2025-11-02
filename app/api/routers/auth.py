@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta
 from app.core.config import settings
 from app.core import security
+import asyncio
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -15,12 +16,12 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     "/login", 
     response_model=Token
 )
-def login_for_access_token(
+async def login_for_access_token(
     db: Session = Depends(deps.get_db),
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
 
-    user = user_service.authenticate_user(
+    user = await user_service.authenticate_user(
         db, username=form_data.username, password=form_data.password
     )
     if not user:
@@ -31,10 +32,11 @@ def login_for_access_token(
         )
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = security.create_access_token(
+    access_token = await asyncio.to_thread(
+        security.create_access_token,
         subject=user.username, 
         role=user.role, 
         expires_delta=access_token_expires
     )
-    
+
     return{"access_token": access_token, "token_type": "bearer"}

@@ -4,13 +4,13 @@ from app.services.ingestion_service import IngestionService
 from app.models.user import User  # noqa: F401
 import logging
 import tempfile
-import shutil
+import aiofiles
 from app.schemas.infraction import InfractionPublic, Page
 from datetime import date
 from decimal import Decimal
 from app.services import infraction_service
 from app.db.session import AsyncSession
-
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/infractions", tags=["Infractions"])
     status_code=status.HTTP_202_ACCEPTED,
     summary="Envia um arquivo CSV para ingestão assíncrona de infrações.",
 )
-def upload_infractions_csv(
+async def upload_infractions_csv(
     background_tasks: BackgroundTasks,
     current_active_admin: User = Depends(deps.get_current_active_admin_user),
     file: UploadFile = File(..., description="Arquivo CSV contendo os dados das infrações.")
@@ -38,12 +38,25 @@ def upload_infractions_csv(
             detail=f"Tipo de arquivo inválido: {file.content_type}. Apenas arquivos CSV são aceitos."
         )
     
+    temp_file_path = ""
     try:
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            shutil.copyfileobj(file.file, temp_file)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_file:
             temp_file_path = temp_file.name
+
+        async with aiofiles.open(temp_file_path, 'wb') as out_file:
+            while content:= await file.read(1024 * 1024): # Lê o arquivo em pedaços de 1MB
+                await out_file.write(content)
+    except Exception as e:
+        if os.path.exists(temp_file_path):
+            aiofiles.os.remove(temp_file_path)
+
+        logger.error(f"Erro ao salvar o arquivo temporário: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro ao salvar o arquivo temporário: {e}"
+        )
     finally:
-        file.file.close()
+        await file.close()
 
     logger.info(
         f"Usuário '{current_active_admin.username}' (ID: {current_active_admin.id}) "

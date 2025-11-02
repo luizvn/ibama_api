@@ -3,10 +3,11 @@ from dynaconf.utils.boxing import DynaBox
 
 settings: DynaBox = Dynaconf(
     env_switcher="APP_ENV",
-    default_env="development",
+    default_env="default",
     settings_files=["settings.toml", ".secrets.toml"],
     environments=True,
-    load_dotenv=True,
+    load_dotenv=False,
+    envvars=True,
     envvar_prefix=False,
     PROJECT_NAME="API de Autos de Infração - IBAMA",
     ALGORITHM="HS256",
@@ -14,21 +15,21 @@ settings: DynaBox = Dynaconf(
 
 settings.validators.register(
     Validator(
-        "DATABASE_URL",
-        "SECRET_KEY",
-        "ALGORITHM",
-        "ACCESS_TOKEN_EXPIRE_MINUTES",
+        "database_url",
+        "secret_key",
+        "algorithm",
+        "access_token_expire_minutes",
         must_exist=True,
     ),
     Validator(
-        "SECRET_KEY",
-        min_len=32,
-        messages={"min_len": "SECRET_KEY precisa ter pelo menos 32 caracteres."}
+        "secret_key",
+        len_min=32,
+        messages={"len_min": "secret_key precisa ter pelo menos 32 caracteres."}
     ),
     Validator(
-        "DATABASE_URL",
-        must_contain="asyncmy",
-        messages={"must_contain": "DATABASE_URL deve usar o driver 'asyncmy'"}
+        "database_url",
+        cont="asyncmy",
+        messages={"cont": "database_url deve usar o driver 'asyncmy'"}
     )
 )
 

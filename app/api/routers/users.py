@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Response, status, Depends, HTTPException
-from sqlalchemy.orm import Session
 from app.schemas.user import PasswordUpdate, RoleUpdate, StatusUpdate, UserCreate, User
 from app.api import deps
 from app.services import user_service
+from app.db.session import AsyncSession
 
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -13,11 +13,11 @@ router = APIRouter(prefix="/users", tags=["Users"])
     response_model=User,
     summary="Cria um novo usuário."
 )
-def create_user(
+async def create_user(
     user: UserCreate,
-    db: Session = Depends(deps.get_db)
+    db: AsyncSession = Depends(deps.get_db)
 ):
-    created_user = user_service.create_user(db, user)
+    created_user = await user_service.create_user(db, user)
 
     if not created_user:
         raise HTTPException(
@@ -33,10 +33,10 @@ def create_user(
     response_model=User,
     summary="Atualiza o status de um usuário."
 )
-def update_user_status(
+async def update_user_status(
     user_id: int,
     user_status: StatusUpdate,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     current_active_admin: User = Depends(deps.get_current_active_admin_user)
 ):  
     if current_active_admin == user_id:
@@ -45,7 +45,7 @@ def update_user_status(
             detail="Não é possível alterar o status do próprio usuário."
         )
 
-    updated_user = user_service.update_user_status(db, user_id, user_status)
+    updated_user = await user_service.update_user_status(db, user_id, user_status)
 
     if not updated_user:
         raise HTTPException(
@@ -61,11 +61,11 @@ def update_user_status(
     response_model=list[User],
     summary="Lista todos os usuários."
 )
-def get_all_users(
-    db: Session = Depends(deps.get_db),
+async def get_all_users(
+    db: AsyncSession = Depends(deps.get_db),
     current_active_admin: User = Depends(deps.get_current_active_admin_user)
 ):
-    users = user_service.get_all_users(db)
+    users = await user_service.get_all_users(db)
 
     if not users:
         raise HTTPException(
@@ -81,10 +81,10 @@ def get_all_users(
     response_model=User,
     summary="Atualiza o papel de um usuário."
 )
-def update_user_role(
+async def update_user_role(
     user_id: int,
     role: RoleUpdate,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     current_active_admin: User = Depends(deps.get_current_active_admin_user),
 ):
     if current_active_admin.id == user_id:
@@ -93,7 +93,7 @@ def update_user_role(
             detail="Não é possível alterar o papel do próprio usuário."
         )
     
-    updated_user = user_service.update_user_role(db, user_id, role)
+    updated_user = await user_service.update_user_role(db, user_id, role)
 
     if not updated_user:
         raise HTTPException(
@@ -108,11 +108,11 @@ def update_user_role(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Desativa a conta do próprio usuário logado."
 )
-def deactivate_current_user(
-    db: Session = Depends(deps.get_db),
+async def deactivate_current_user(
+    db: AsyncSession = Depends(deps.get_db),
     current_active_user: User = Depends(deps.get_current_active_user)
 ):
-    user_service.update_user_status(db, current_active_user.id, StatusUpdate(is_active=False))
+    await user_service.update_user_status(db, current_active_user.id, StatusUpdate(is_active=False))
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -121,12 +121,12 @@ def deactivate_current_user(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Atualiza a senha do próprio usuário logado."
 )
-def update_current_user_password(
+async def update_current_user_password(
     password_update: PasswordUpdate,
-    db: Session = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_db),
     current_active_user: User = Depends(deps.get_current_active_user)
 ):
-    is_changed = user_service.update_current_user_password(
+    is_changed = await user_service.update_current_user_password(
         db, 
         current_active_user.id, 
         password_update

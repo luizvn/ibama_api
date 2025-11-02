@@ -14,14 +14,14 @@ from app.models.user import UserRole
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
         finally:
             await session.close()
 
-def get_current_user(
+async def get_current_user(
     db: AsyncSession = Depends(get_db), 
     token: str = Depends(oauth2_scheme)
 ) -> User:
@@ -48,7 +48,7 @@ def get_current_user(
     if token_data.username is None:
         raise credentials_exception
     
-    user = user_service.get_user_by_username(db, username=token_data.username)
+    user = await user_service.get_user_by_username(db, username=token_data.username)
     if user is None:
         raise credentials_exception
     
