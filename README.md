@@ -2,16 +2,16 @@
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.117-blue?logo=fastapi)
+![FastAPI](https://img.shields.io/badge/FastAPI-blue?logo=fastapi)
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-blue?logo=sqlalchemy)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)
 ![Docker](https://img.shields.io/badge/Docker-blue?logo=docker)
 
 ## 🇧🇷 Sobre o Projeto
 
-A **API IBAMA** é uma solução de backend robusta e de alta performance, projetada para a ingestão e consulta de dados públicos sobre autos de infração ambiental emitidos pelo IBAMA. O principal desafio deste projeto é o processamento eficiente de arquivos CSV de múltiplos gigabytes, garantindo que os dados sejam validados, processados e armazenados de forma assíncrona, sem impactar a disponibilidade da API.
+A **API IBAMA** é uma solução de backend robusta e de alta performance, projetada para a ingestão, processamento e consulta de dados públicos sobre autos de infração ambiental emitidos pelo IBAMA. O principal desafio deste projeto é o processamento eficiente de arquivos CSV de múltiplos gigabytes, garantindo que os dados sejam validados, processados e armazenados de forma assíncrona, sem impactar a disponibilidade da API.
 
-Este projeto foi construído utilizando as mais modernas ferramentas do ecossistema Python, com foco em boas práticas de desenvolvimento, escalabilidade e manutenibilidade.
+Este projeto foi construído utilizando as mais modernas ferramentas do ecossistema Python, com uma arquitetura **"Async-First"** (totalmente assíncrona) e foco em boas práticas de desenvolvimento, escalabilidade e manutenibilidade.
 
 ---
 
@@ -27,12 +27,16 @@ Os conjuntos de dados originais, em formato CSV, que servem de insumo para a fun
 
 ## ✨ Principais Funcionalidades
 
-* **Ingestão de Dados em Larga Escala:** Endpoint otimizado para receber arquivos CSV de grande volume. O processamento é feito em *background* (assíncrono), utilizando **Pandas** para leitura em *chunks*, o que garante um baixo consumo de memória e alta performance.
-* **Operação de Upsert Inteligente:** A lógica de ingestão utiliza o `INSERT ... ON DUPLICATE KEY UPDATE` do MySQL, permitindo inserir novos registros e atualizar os existentes em uma única operação atômica, garantindo a consistência dos dados.
-* **Autenticação e Autorização Segura:** Implementação de autenticação baseada em tokens **JWT (JSON Web Tokens)** e um sistema de autorização baseado em papéis (Roles: `ADMIN`, `USER`), garantindo que apenas usuários autorizados possam acessar determinados recursos.
-* **API de Consulta Avançada:** Endpoints RESTful para consulta de infrações com múltiplos filtros combináveis (data, valor da multa, infrator, localização, etc.) e sistema de paginação.
-* **Gerenciamento de Migrações de Banco de Dados:** Utilização do **Alembic** para versionar o schema do banco de dados de forma segura e reprodutível.
-* **Ambiente Containerizado:** O projeto é totalmente containerizado com **Docker** e **Docker Compose**, facilitando a configuração do ambiente de desenvolvimento e garantindo consistência entre diferentes máquinas.
+* **Pipeline de ETL Assíncrono (Crawler & Ingestion):** Um pipeline de dados completo, orquestrado via `cli.py`, que:
+    1.  Baixa (crawls) o arquivo `.zip` de dados mais recente de forma assíncrona usando `httpx` (`CrawlerService`).
+    2.  Processa os CSVs de grande volume em *chunks* (lotes) usando **Pandas**, garantindo baixo consumo de memória.
+    3.  Ingere os dados no MySQL de forma assíncrona (`IngestionService`).
+* **Operação de Upsert Inteligente:** A lógica de ingestão utiliza o `INSERT ... ON DUPLICATE KEY UPDATE` do MySQL (via `sqlalchemy.dialects.mysql.insert`), permitindo inserir novos registros e atualizar os existentes em uma única operação atômica, garantindo a consistência dos dados.
+* **API RESTful 'Async-First':** Todos os endpoints são totalmente assíncronos (`async def`), desde a requisição web (FastAPI) até a consulta no banco de dados (SQLAlchemy 2.0 + `asyncmy`), garantindo altíssima concorrência e performance de I/O.
+* **Autenticação e Autorização Segura:** Implementação de autenticação baseada em tokens **JWT (JSON Web Tokens)** e um sistema de autorização baseado em papéis (Roles: `ADMIN`, `USER`).
+* **Configuração Moderna com Dynaconf:** Gerenciamento de configurações, usando `settings.toml` para padrões e `.secrets.toml` (git-ignored) para segredos e configurações de ambiente.
+* **Ambiente Containerizado e Reprodutível:** O projeto é totalmente gerenciado pelo **Docker** e **Docker Compose**, orquestrando os containers da API, do banco de dados (MySQL) e do banco de testes.
+* **Testes de Integração:** Suíte de testes automatizados usando `Pytest` e `httpx.AsyncClient`, que rodam contra um banco de dados de teste real e isolado para validar a API e a lógica de negócio.
 
 ---
 
@@ -40,27 +44,31 @@ Os conjuntos de dados originais, em formato CSV, que servem de insumo para a fun
 
 | Categoria | Tecnologia | Descrição |
 | :--- | :--- | :--- |
-| **Backend** | **FastAPI** | Framework web de alta performance para construção de APIs com Python moderno. |
-| | **SQLAlchemy 2.0** | ORM para interação com o banco de dados, utilizando a nova sintaxe declarativa e `select()`. |
-| | **Pydantic V2** | Para validação e serialização de dados, garantindo a integridade dos dados na camada de API. |
-| | **Pandas** | Utilizado para o processamento eficiente e em memória de grandes arquivos CSV. |
-| **Banco de Dados** | **MySQL 8.0** | Banco de dados relacional para armazenamento dos dados das infrações. |
+| **Backend** | **FastAPI** | Framework web de alta performance para construção de APIs assíncronas. |
+| | **SQLAlchemy 2.0** | ORM para interação com o banco de dados, usando a nova sintaxe assíncrona (`AsyncSession`). |
+| | **Pydantic V2** | Para validação, serialização de dados e gerenciamento de schemas da API. |
+| | **Pandas** | Utilizado para o processamento eficiente (em *chunks*) de grandes arquivos CSV. |
+| | **httpx** | Cliente HTTP assíncrono moderno, usado pelo Crawler para I/O de rede não-bloqueante. |
+| | **Typer** | Para criação do `cli.py`, o ponto de entrada do pipeline de ETL. |
+| **Banco de Dados** | **MySQL 8.0** | Banco de dados relacional principal. |
+| | **asyncmy** | Driver MySQL assíncrono, permitindo o uso de `await` em queries. |
 | **Autenticação** | **JWT / Passlib** | Para geração de tokens de acesso seguros e hashing de senhas. |
-| **Tooling & DevOps** | **Docker & Docker Compose** | Para containerização da aplicação e do banco de dados. |
+| **Tooling & DevOps** | **Docker & Docker Compose** | Para containerização da aplicação, banco de dados e ambiente de testes. |
 | | **Alembic** | Ferramenta para gerenciamento de migrações de schema do banco de dados. |
+| | **Dynaconf** | Gerenciador de configurações por ambiente. |
+| | **Pytest** | Framework para testes de unidade e integração. |
 | | **Uvicorn** | Servidor ASGI de alta performance para rodar a aplicação FastAPI. |
 
 ---
 
 ## 🚀 Como Executar o Projeto
 
-Siga os passos abaixo para configurar e executar o projeto em seu ambiente local.
+O projeto é desenhado para ser executado **exclusivamente com Docker**. Não é necessário (nem recomendado) instalar dependências Python ou um banco de dados na sua máquina local.
 
 ### Pré-requisitos
 
 * [**Docker**](https://www.docker.com/get-started) e [**Docker Compose**](https://docs.docker.com/compose/install/)
-* [**Python 3.11+**](https://www.python.org/downloads/)
-* Gerenciador de pacotes `pip` e `venv`
+* (Recomendado) [VS Code](https://code.visualstudio.com/) com a extensão [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
 ### 1. Clonar o Repositório
 
@@ -68,58 +76,64 @@ Siga os passos abaixo para configurar e executar o projeto em seu ambiente local
 git clone [https://github.com/luizvn/ibama_api.git](https://github.com/luizvn/ibama_api.git)
 cd ibama_api
 ```
+
 ### 2. Configurar Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto, usando o modelo abaixo. Este arquivo conterá as configurações sensíveis da aplicação.
+Este projeto usa o Docker Compose para injetar variáveis de ambiente no container da API a partir de um arquivo .env.
+Crie um arquivo .env na raiz do projeto (este arquivo está no .gitignore e não será enviado ao repositório).
 
-**Arquivo: `.env`**
+**Arquivo: .env**
 ```env
-# Configurações do Banco de Dados
-DATABASE_URL="mysql+pymysql://root:root@localhost:3306/ibama_db"
+# Configurações do Banco de Dados (lidas pelo Docker Compose e pela API)
+# Estas senhas devem bater com as do docker-compose.yml
+DB_HOST=db
+DB_PORT=3306
+DB_USER=root
+DB_PASS=root
+DB_NAME=ibama_db
 
-# Configurações de Segurança do JWT
-SECRET_KEY="<gere_uma_chave_secreta_aqui_ex: openssl rand -hex 32>"
+# String de conexão principal (usada pela API e Alembic)
+# Deve usar o driver 'asyncmy' e apontar para o nome do serviço 'db'
+DATABASE_URL="mysql+asyncmy://root:root@db:3306/ibama_db"
+
+# String de conexão de teste (usada pelo Pytest)
+DATABASE_URL_TEST="mysql+asyncmy://root:root@db:3306/ibama_db_test"
+
+# Chave secreta para assinar os tokens JWT
+# Gere com: openssl rand -hex 32
+SECRET_KEY="<sua_chave_secreta_de_32_bytes_aqui>"
+
+# Configurações do Token JWT
 ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
-### 3. Iniciar o Banco de Dados com Docker
 
-Com o Docker em execução, suba o container do MySQL:
+### 3. Iniciar o Ambiente Docker
+
+Este comando irá construir a imagem da API (se ainda não existir), iniciar o container da API e o container do banco de dados MySQL em segundo plano.
+
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
-Entendido. O texto que você colou está com a formatação do Markdown quebrada. Vou reconstruir essa seção para você.
 
-Aqui está o trecho, começando de "Aguarde alguns segundos..." até o final da seção de instalação, com a formatação correta em Markdown (raw).
+Aguarde alguns segundos até que o banco de dados esteja totalmente inicializado (você pode verificar com docker-compose logs db).
 
-Markdown
+### 4. Aplicar as Migrações do Banco de Dados
 
-Aguarde alguns segundos até que o banco de dados esteja totalmente inicializado.
+Com os containers em execução, execute o Alembic dentro do container da API para criar as tabelas no banco.
 
-### 4. Configurar o Ambiente Python e Instalar Dependências
-
-Crie e ative um ambiente virtual:
 ```bash
-# Windows
-python -m venv .venv
-.venv\Scripts\activate
+docker-compose exec api alembic upgrade head
+```
 
-# Linux / macOS
-python3 -m venv .venv
-source .venv/bin/activate
-```
-Instale as dependências do projeto:
-```bash
-pip install -r requirements.txt
-```
 ### 5. Aplicar as Migrações do Banco de Dados
 Com o banco de dados rodando e as dependências instaladas, aplique as migrações para criar as tabelas:
 ```bash
 alembic upgrade head
 ```
-### 6. Criar um Usuário Administrador
+### 5. Criar um Usuário Administrador
 
-Para ter acesso aos endpoints administrativos, primeiro crie um usuário comum através da API e depois altere sua permissão (`role`) diretamente no banco de dados.
+Para ter acesso aos endpoints administrativos (como o upload de CSV), você precisa de um usuário `ADMIN`.
 
 **Passo 1: Crie um usuário via API**
 
@@ -128,30 +142,40 @@ Use a documentação interativa em `http://localhost:8000/docs` para enviar uma 
 ```bash
 curl -X POST "http://localhost:8000/users" \
 -H "Content-Type: application/json" \
--d '{"username": "admin", "password": "seu-password-aqui"}'
+-d '{"username": "admin", "password": "Test@1234"}'
 ```
 **Passo 2: Promova o usuário para ADMIN**
 
-Conecte-se ao seu banco de dados MySQL (usando DBeaver, DataGrip, ou o terminal) e execute o seguinte comando SQL para definir a `role` do usuário recém-criado como `ADMIN`.
+Conecte-se ao seu banco de dados MySQL (usando DBeaver, DataGrip, ou o terminal do docker-compose) e execute o seguinte comando SQL para definir a `role` do usuário recém-criado como `ADMIN`.
 
 ```sql
 UPDATE users SET role = 'ADMIN' WHERE username = 'admin';
 ```
-### 7. Iniciar a Aplicação
-Finalmente, inicie o servidor da API com Uvicorn:
+
+### 6. Acessar a API
+
+A API estará disponível em `http://localhost:8000`.
+A documentação interativa (Swagger UI) pode ser acessada em `http://localhost:8000/docs`.
+
+### 7. (Opcional) Executar o Pipeline de ETL Manualmente
+
+Você pode disparar o pipeline completo de crawler e ingestão executando o `cli.py` *dentro* do container da API:
+
 ```bash
-uvicorn app.main:app --reload
+docker-compose exec api python cli.py run
 ```
-A API estará disponível em `http://localhost:8000`. A documentação interativa (Swagger UI) pode ser acessada em `http://localhost:8000/docs`.
+
+Isso iniciará o download do arquivo .zip, processamento e ingestão no banco.
 
 ---
 
 ## 🏛️ Arquitetura e Decisões de Design
 
 * **Estrutura de Projeto Limpa:** O código é organizado seguindo princípios de *separation of concerns*, dividindo a lógica em camadas de `api` (routers), `services` (lógica de negócio), `schemas` (contratos de dados Pydantic) e `models` (ORM SQLAlchemy).
-* **Injeção de Dependências:** O sistema de injeção de dependências do FastAPI (`Depends`) é utilizado extensivamente para gerenciar sessões de banco de dados e a autenticação de usuários, promovendo um código desacoplado e fácil de testar.
-* **SQLAlchemy 2.0 (Sintaxe Moderna):** A escolha pela sintaxe da versão 2.0, baseada em `select()`, foi feita por ser mais explícita, poderosa e alinhada com a forma como o SQL funciona, em contraste com a API de `query()` mais antiga.
-* **Processamento Assíncrono para I/O Bound:** A ingestão do CSV é uma tarefa *I/O-bound* (limitada pela leitura do disco e escrita no banco). O uso de `BackgroundTasks` do FastAPI permite que essas operações longas não bloqueiem o *event loop* principal, mantendo a API responsiva para outras requisições.
+* **Arquitetura 'Async-First':** A escolha por `async` de ponta-a-ponta (FastAPI, `httpx`, `asyncmy`) foi deliberada para maximizar a performance de I/O e a concorrência.
+* **ETL como um Processo Separado (CLI):** O pipeline de ETL (`cli.py`) é intencionalmente separado da API web (`app.main:app`). Isso evita que um processo de ingestão de dados longo e pesado trave ou consuma recursos do servidor web e também posssa ser executado como um processo "cron" independente.
+* **Configuração com Dynaconf:** O `Dynaconf` foi escolhido por sua flexibilidade, permitindo um sistema de configuração em camadas, onde `settings.toml` define padrões e variáveis de ambiente (lidas do `.env`) sobrescrevem com segredos.
+* **Testes de Integração com Banco Real:** O `Pytest` (`conftest.py`) é configurado para rodar testes de integração contra um banco de dados de teste real (criado pelo `docker-compose` e `01-create-test-db.sql`). Isso garante que nossas queries e lógica de negócio funcionam como esperado no ambiente MySQL, indo além de mocks.
 
 ---
 
