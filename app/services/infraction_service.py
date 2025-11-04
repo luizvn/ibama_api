@@ -1,12 +1,12 @@
 from app.models.infraction import Infraction
-from sqlalchemy.orm import Session
+from app.db.session import AsyncSession
 from datetime import date
 from decimal import Decimal
 from sqlalchemy import select, func
 
 
 async def get_infractions(
-    db: Session, 
+    db: AsyncSession, 
     *,
     skip: int = 0, 
     limit: int = 50,
@@ -56,7 +56,7 @@ async def get_infractions(
 
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total_result = await db.execute(count_stmt)
-    total = total_result.scalar(count_stmt) or 0
+    total = total_result.scalar() or 0
 
     result_stmt = stmt.order_by(Infraction.infraction_datetime.desc()).offset(skip).limit(limit)
     

@@ -13,6 +13,7 @@ COPY settings.toml .
 
 COPY ./app /app/app
 COPY ./tests /app/tests
+COPY cli.py .
 
 EXPOSE 8000
 
