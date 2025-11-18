@@ -20,9 +20,11 @@ class CrawlerService:
         self.client = client
 
     def extract_zip(self, zip_path: str) -> List[str]:
+        # initialize here so exception handlers and finally blocks can safely
+        # reference the variable without causing "possibly unbound" warnings.
+        extracted_csv_paths: List[str] = []
         try:
             logger.info("Iniciando extração dos CSVs do arquivo ZIP...")
-            extracted_csv_paths: List[str] = []
 
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 
@@ -64,6 +66,9 @@ class CrawlerService:
             return []
 
     async def fetch_and_extract_all_csvs(self) -> Optional[List[str]]:
+        # ensure this is defined before the try so finally can reference it
+        temp_zip_file_path: Optional[str] = None
+
         try:
             with tempfile.NamedTemporaryFile(suffix=".zip", delete=True) as temp_file:
                 temp_zip_file_path = temp_file.name
