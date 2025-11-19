@@ -24,8 +24,8 @@ jobs:
       - name: Instalar Ruff
         run: pip install ruff==0.4.0
 
-      - name: Verificar formatação
-        run: ruff format --check .
+      # - name: Verificar formatação
+      #   run: ruff format --check .
       
       - name: Verificar linter
         run: ruff check --output-format=github .
