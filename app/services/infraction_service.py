@@ -6,9 +6,9 @@ from sqlalchemy import select, func
 
 
 async def get_infractions(
-    db: AsyncSession, 
+    db: AsyncSession,
     *,
-    skip: int = 0, 
+    skip: int = 0,
     limit: int = 50,
     source_id: int | None = None,
     infraction_number: str | None = None,
@@ -19,9 +19,8 @@ async def get_infractions(
     min_fine_value: Decimal | None = None,
     municipality: str | None = None,
     state: str | None = None,
-    affected_biomes: str | None = None
+    affected_biomes: str | None = None,
 ) -> tuple[int, list[Infraction]]:
-    
     stmt = select(Infraction)
 
     if source_id:
@@ -58,8 +57,10 @@ async def get_infractions(
     total_result = await db.execute(count_stmt)
     total = total_result.scalar() or 0
 
-    result_stmt = stmt.order_by(Infraction.infraction_datetime.desc()).offset(skip).limit(limit)
-    
+    result_stmt = (
+        stmt.order_by(Infraction.infraction_datetime.desc()).offset(skip).limit(limit)
+    )
+
     infractions_result = await db.execute(result_stmt)
     infractions = list(infractions_result.scalars().all())
 

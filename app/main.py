@@ -10,7 +10,7 @@ setup_logging()
 app = FastAPI(
     title="API de Autos de Infração - IBAMA",
     description="API para consulta de autos de infração do IBAMA.",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 app.add_middleware(
@@ -18,7 +18,7 @@ app.add_middleware(
     allow_origins=settings.CORS_ORIGIN,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"]
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(auth.router)

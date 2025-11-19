@@ -5,6 +5,7 @@ from datetime import datetime, date
 
 T = TypeVar("T")
 
+
 class InfractionPublic(BaseModel):
     id: int
     source_id: int
@@ -30,6 +31,7 @@ class InfractionPublic(BaseModel):
     affected_biomes: str | None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class Page(BaseModel, Generic[T]):
     total: int

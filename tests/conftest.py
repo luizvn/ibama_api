@@ -18,9 +18,11 @@ from app.models.user import User  # noqa: F401
 def anyio_backend():
     return "asyncio"
 
+
 TEST_DATABASE_URL = os.getenv("DATABASE_URL_TEST")
 if not TEST_DATABASE_URL:
     raise ValueError("DATABASE_URL_TEST não está definida no ambiente")
+
 
 @pytest.fixture(scope="session")
 async def db_engine():
@@ -42,7 +44,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
     connection = await db_engine.connect()
 
     trans = await connection.begin()
-    
+
     SessionTest = async_sessionmaker(
         bind=connection, expire_on_commit=False, class_=AsyncSession
     )
@@ -60,13 +62,12 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 
 @pytest.fixture(scope="function")
 async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         try:
             yield db_session
         finally:
             pass
-    
+
     app.dependency_overrides[deps.get_db] = override_get_db
 
     transport = ASGITransport(app=app)

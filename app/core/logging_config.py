@@ -21,9 +21,14 @@ LOGGING_CONFIG = {
     "loggers": {
         "app": {"handlers": ["default"], "level": "INFO", "propagate": False},
         "uvicorn.error": {"level": "INFO"},
-        "uvicorn.access": {"handlers": ["default"], "level": "INFO", "propagate": False},
+        "uvicorn.access": {
+            "handlers": ["default"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
+
 
 def setup_logging():
     dictConfig(LOGGING_CONFIG)

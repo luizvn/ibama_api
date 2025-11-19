@@ -24,13 +24,13 @@ settings.validators.register(
     Validator(
         "secret_key",
         len_min=32,
-        messages={"len_min": "secret_key precisa ter pelo menos 32 caracteres."}
+        messages={"len_min": "secret_key precisa ter pelo menos 32 caracteres."},
     ),
     Validator(
         "database_url",
         cont="asyncmy",
-        messages={"cont": "database_url deve usar o driver 'asyncmy'"}
-    )
+        messages={"cont": "database_url deve usar o driver 'asyncmy'"},
+    ),
 )
 
 settings.validators.validate()

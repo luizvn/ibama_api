@@ -12,15 +12,11 @@ import asyncio
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post(
-    "/login", 
-    response_model=Token
-)
-async def login_for_access_token(
-    db: Session = Depends(deps.get_db),
-    form_data: OAuth2PasswordRequestForm = Depends()
-):
 
+@router.post("/login", response_model=Token)
+async def login_for_access_token(
+    db: Session = Depends(deps.get_db), form_data: OAuth2PasswordRequestForm = Depends()
+):
     user = await user_service.authenticate_user(
         db, username=form_data.username, password=form_data.password
     )
@@ -30,13 +26,13 @@ async def login_for_access_token(
             detail="Usuário ou senha incorretos!",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await asyncio.to_thread(
         security.create_access_token,
-        subject=user.username, 
-        role=user.role, 
-        expires_delta=access_token_expires
+        subject=user.username,
+        role=user.role,
+        expires_delta=access_token_expires,
     )
 
-    return{"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}

@@ -4,5 +4,6 @@ from typing import Annotated
 
 bigintpk = Annotated[int, mapped_column(BIGINT, primary_key=True, autoincrement=True)]
 
+
 class Base(DeclarativeBase):
     pass
