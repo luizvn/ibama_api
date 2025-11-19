@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repositório
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Configurar Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -37,6 +37,46 @@ jobs:
 
     steps:
       - name: Checkout repositório
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Criar .env
+        run: |
+          echo "DB_HOST=db" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_USER=root" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS_TEST }}" >> .env
+          echo "DB_NAME=ibama_db" >> .env
+          echo "DATABASE_URL=mysql+asyncmy://root:${{ secrets.DB_PASS_TEST }}@db:3306/ibama_db" >> .env
+          echo "DATABASE_URL_TEST=mysql+asyncmy://root:${{ secrets.DB_PASS_TEST }}@db:3306/ibama_db_test" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "ALGORITHM=HS256" >> .env
+          echo "ACCESS_TOKEN_EXPIRE_MINUTES=30" >> .env
+
+      - name: Subir ambiente com Docker Compose
+        run: docker-compose up -d --build
+
+      - name: Aguardar banco de dados (Healthcheck)
+        run: |
+          echo "Aguardando o banco de dados ficar saudável..."
+          for i in {1..30}; do
+            if [ "$(docker inspect --format='{{.State.Health.Status}}' ibama_api_db)" == "healthy" ]; then
+              echo "Banco de dados está saudável!"
+              exit 0
+            fi
+            echo "Aguardando healthcheck do banco... ($i/30)"
+            sleep 2
+          done
+          echo "Timeout aguardando o banco de dados."
+          docker-compose logs db
+          exit 1
+
+      - name: Rodar migrações
+        run: docker-compose exec -T api alembic upgrade head
+
+      - name: Executar testes
+        run: docker-compose exec -T api pytest -v
+
+      - name: Derrubar ambiente
+        if: always()
+        run: docker-compose down
+        
