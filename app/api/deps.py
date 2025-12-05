@@ -1,7 +1,7 @@
 from typing import AsyncGenerator
 from app.db.session import AsyncSessionLocal, AsyncSession
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from app.models.user import User
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
@@ -12,6 +12,7 @@ from app.models.user import UserRole
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -69,3 +70,35 @@ def get_current_active_admin_user(
         )
 
     return current_active_user
+
+async def get_current_user_from_api_key(
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(api_key_header),
+) -> User | None:
+    
+    if not api_key:
+        return None
+    
+    user = await user_service.get_user_by_api_key(db, api_key=api_key)
+    
+    return user
+
+async def get_current_user_hybrid(
+    api_key_user: User | None = Depends(get_current_user_from_api_key),
+    token_user: User | None = Depends(get_current_user),
+) -> User | None:
+    
+    user = api_key_user or token_user
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Não foi possível validar as credenciais de acesso.",
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="O usuário está inativo."
+        )
+    
+    return user
