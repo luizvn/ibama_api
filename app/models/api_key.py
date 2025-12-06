@@ -13,7 +13,9 @@ class ApiKey(Base):
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
 
-    prefix: Mapped[str] = mapped_column(String(50), index=True, nullable=False, unique=True)
+    prefix: Mapped[str] = mapped_column(
+        String(50), index=True, nullable=False, unique=True
+    )
 
     hashed_key: Mapped[str] = mapped_column(String(255), nullable=False)
 

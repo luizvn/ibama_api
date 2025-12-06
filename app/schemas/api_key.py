@@ -4,8 +4,13 @@ from pydantic import BaseModel, Field
 
 
 class ApiKeyCreate(BaseModel):
-    name: str = Field(..., min_length=3, max_length=50, description="Nome identificador da chave")
-    days_to_expire: int | None = Field(None, description="Quantidade de dias para expirar a chave (opcional)")
+    name: str = Field(
+        ..., min_length=3, max_length=50, description="Nome identificador da chave"
+    )
+    days_to_expire: int | None = Field(
+        None, description="Quantidade de dias para expirar a chave (opcional)"
+    )
+
 
 class ApiKeyShow(BaseModel):
     id: int = Field(..., description="ID da chave")
@@ -18,5 +23,8 @@ class ApiKeyShow(BaseModel):
     class Config:
         from_attributes = True
 
+
 class ApiKeyCreated(ApiKeyShow):
-    key: str = Field(..., description="A chave API completa. Exiba isso apenas uma vez!")
+    key: str = Field(
+        ..., description="A chave API completa. Exiba isso apenas uma vez!"
+    )

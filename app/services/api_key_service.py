@@ -15,12 +15,10 @@ import json
 KEY_PREFIX = "ibama_"
 CACHE_TTL = 600
 
+
 async def create_api_key(
-    db: AsyncSession,
-    user_id: int,
-    data: ApiKeyCreate
+    db: AsyncSession, user_id: int, data: ApiKeyCreate
 ) -> tuple[ApiKey, str]:
-    
     raw_secret = secrets.token_urlsafe(32)
 
     prefix_part = secrets.token_hex(4)
@@ -50,16 +48,13 @@ async def create_api_key(
 
     return new_api_key, final_key
 
-async def get_user_by_api_key(
-    db: AsyncSession, 
-    api_key: str
-) -> User | None:
-    
-    if not api_key.startswith(KEY_PREFIX) or '.' not in api_key:
+
+async def get_user_by_api_key(db: AsyncSession, api_key: str) -> User | None:
+    if not api_key.startswith(KEY_PREFIX) or "." not in api_key:
         return None
 
     try:
-        prefix_extracted = api_key.split('.')[0]
+        prefix_extracted = api_key.split(".")[0]
     except IndexError:
         return None
 
@@ -69,7 +64,7 @@ async def get_user_by_api_key(
 
     if cached_data:
         data_dict = json.loads(cached_data)
-        
+
         hashed_key_db = data_dict.get("hashed_key")
         user_id = data_dict.get("user_id")
         expires_at = data_dict.get("expires_at")
@@ -85,10 +80,7 @@ async def get_user_by_api_key(
     stmt = (
         select(ApiKey)
         .options(joinedload(ApiKey.user))
-        .where(
-            ApiKey.prefix == prefix_extracted,
-            ApiKey.is_active is True
-        )
+        .where(ApiKey.prefix == prefix_extracted, ApiKey.is_active is True)
     )
 
     result = await db.execute(stmt)
@@ -106,25 +98,27 @@ async def get_user_by_api_key(
     cache_payload = {
         "hashed_key": api_key_db.hashed_key,
         "user_id": api_key_db.user_id,
-        "expires_at": api_key_db.expires_at.timestamp() if api_key_db.expires_at else None,
+        "expires_at": api_key_db.expires_at.timestamp()
+        if api_key_db.expires_at
+        else None,
     }
 
     await redis_client.set(cache_key, json.dumps(cache_payload), ex=CACHE_TTL)
 
     return api_key_db.user
 
+
 async def disable_api_key(
     db: AsyncSession,
     api_key_id: int,
     user: User,
-) -> ApiKey | None :
-
+) -> ApiKey | None:
     api_key = await db.get(ApiKey, api_key_id)
 
     if not api_key:
         return None
 
-    if api_key.user_id != user.id and user.role != UserRole.ADMIN :
+    if api_key.user_id != user.id and user.role != UserRole.ADMIN:
         return None
 
     api_key.is_active = False
