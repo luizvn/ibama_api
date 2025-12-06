@@ -1,5 +1,7 @@
 from datetime import datetime
+
 from pydantic import BaseModel, Field
+
 
 class ApiKeyCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=50, description="Nome identificador da chave")
@@ -16,5 +18,5 @@ class ApiKeyShow(BaseModel):
     class Config:
         from_attributes = True
 
-class ApyKeyCreated(ApiKeyShow):
+class ApiKeyCreated(ApiKeyShow):
     key: str = Field(..., description="A chave API completa. Exiba isso apenas uma vez!")

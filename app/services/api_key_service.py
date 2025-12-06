@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from app.core.security import get_password_hash, verify_password
 from app.models.api_key import ApiKey
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.api_key import ApiKeyCreate
 from app.core.redis import redis_client
 import json
@@ -112,3 +112,24 @@ async def get_user_by_api_key(
     await redis_client.set(cache_key, json.dumps(cache_payload), ex=CACHE_TTL)
 
     return api_key_db.user
+
+async def disable_api_key(
+    db: AsyncSession,
+    api_key_id: int,
+    user: User,
+) -> ApiKey | None :
+
+    api_key = await db.get(ApiKey, api_key_id)
+
+    if not api_key:
+        return None
+
+    if api_key.user_id != user.id and user.role != UserRole.ADMIN :
+        return None
+
+    api_key.is_active = False
+    await db.commit()
+    await db.refresh(api_key)
+    await redis_client.delete(f"api_key:{api_key.prefix}")
+
+    return api_key
