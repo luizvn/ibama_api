@@ -1,0 +1,51 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: ibama_api_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - ibama_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - ibama_net
+
+  redis:
+    image: redis:alpine
+    container_name: ibama_api_redis
+    restart: always
+    networks:
+      - ibama_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 20s
+      retries: 10
+
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/${GITHUB_REPOSITORY_NAME}:latest
+    container_name: ibama_api
+    restart: always
+    ports:
+      - "${PORT_API:-8000}:8000"
+    env_file: .env
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ibama_net
+
+volumes:
+  ibama_db_data:
+    driver: local
+
+networks:
+  ibama_net:
+    driver: bridge
