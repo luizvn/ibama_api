@@ -9,8 +9,11 @@ from app.core.security import get_password_hash, verify_password
 from app.models.api_key import ApiKey
 from app.models.user import User
 from app.schemas.api_key import ApiKeyCreate
+from app.core.redis import redis_client
+import json
 
 KEY_PREFIX = "ibama_"
+CACHE_TTL = 600
 
 async def create_api_key(
     db: AsyncSession,
@@ -60,6 +63,25 @@ async def get_user_by_api_key(
     except IndexError:
         return None
 
+    cache_key = f"api_key:{prefix_extracted}"
+
+    cached_data = await redis_client.get(cache_key)
+
+    if cached_data:
+        data_dict = json.loads(cached_data)
+        
+        hashed_key_db = data_dict.get("hashed_key")
+        user_id = data_dict.get("user_id")
+        expires_at = data_dict.get("expires_at")
+
+        if expires_at and datetime.fromtimestamp(expires_at) < datetime.utcnow():
+            return None
+
+        if not verify_password(api_key, hashed_key_db):
+            return None
+
+        return await db.get(User, user_id)
+
     stmt = (
         select(ApiKey)
         .options(joinedload(ApiKey.user))
@@ -80,5 +102,13 @@ async def get_user_by_api_key(
 
     if not verify_password(api_key, api_key_db.hashed_key):
         return None
+
+    cache_payload = {
+        "hashed_key": api_key_db.hashed_key,
+        "user_id": api_key_db.user_id,
+        "expires_at": api_key_db.expires_at.timestamp() if api_key_db.expires_at else None,
+    }
+
+    await redis_client.set(cache_key, json.dumps(cache_payload), ex=CACHE_TTL)
 
     return api_key_db.user

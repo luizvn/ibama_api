@@ -20,3 +20,4 @@ aiofiles
 python-multipart
 pytest
 pytest-anyio
+redis

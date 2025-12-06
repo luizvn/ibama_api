@@ -19,6 +19,15 @@ services:
     networks:
       - ibama_net
 
+  redis:
+    image: redis:alpine
+    container_name: ibama_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - ibama_net
+
   api:
     build: .
     container_name: ibama_api
