@@ -76,6 +76,21 @@ jobs:
       - name: Rodar migrações
         run: docker compose exec -T api alembic upgrade head
 
+      - name: Aguardar redis (Healthcheck)
+        run: |
+          echo "Aguardando o redis ficar saudável..."
+          for i in {1..30}; do
+            if [ "$(docker inspect --format='{{.State.Health.Status}}' ibama_api_redis)" == "healthy" ]; then
+              echo "Redis está saudável!"
+              exit 0
+            fi
+            echo "Aguardando healthcheck do redis... ($i/30)"
+            sleep 2
+          done
+          echo "Timeout aguardando o redis."
+          docker compose logs redis
+          exit 1
+
       - name: Executar testes
         run: docker compose exec -T api pytest -v
 
