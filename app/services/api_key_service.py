@@ -1,16 +1,16 @@
+import json
 import secrets
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.core.redis import redis_client
 from app.core.security import get_password_hash, verify_password
 from app.models.api_key import ApiKey
 from app.models.user import User, UserRole
 from app.schemas.api_key import ApiKeyCreate
-from app.core.redis import redis_client
-import json
 
 KEY_PREFIX = "ibama_"
 CACHE_TTL = 600
@@ -18,7 +18,14 @@ CACHE_TTL = 600
 
 async def create_api_key(
     db: AsyncSession, user_id: int, data: ApiKeyCreate
-) -> tuple[ApiKey, str]:
+) -> tuple[ApiKey | None, str | None]:
+    stmt = select(func.count(ApiKey.id)).where(ApiKey.user_id == user_id)
+    result = await db.execute(stmt)
+    api_key_count = result.scalar()
+
+    if api_key_count >= 5:
+        return None, None
+
     raw_secret = secrets.token_urlsafe(32)
 
     prefix_part = secrets.token_hex(4)
