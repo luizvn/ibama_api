@@ -1,18 +1,12 @@
 name: CD - Deploy para AWS EC2
 
 on:
-    pull_request:
-        branches:
-            - main
-        paths-ignore:
-            - "README.md"
-            - ".gitignore"
-    push:
-        branches:
-            - main
-        paths-ignore:
-            - "README.md"
-            - ".gitignore"
+  workflow_run:
+    workflows: ["CI - Verificação de Pull Request e Push"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
     build-and-push:
