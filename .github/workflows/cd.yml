@@ -1,6 +1,12 @@
 name: CD - Deploy para AWS EC2
 
 on:
+    pull_request:
+        branches:
+            - main
+        paths-ignore:
+            - "README.md"
+            - ".gitignore"
     push:
         branches:
             - main
