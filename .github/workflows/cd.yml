@@ -1,0 +1,77 @@
+name: CD - Deploy para AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+    build-and-push:
+        name: Build e push da imagem
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Logar no GHCR
+              uses: docker/login-action@v3
+              with:
+                registry: ghcr.io
+                username: ${{ github.actor }}
+                password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Normalizar variável de ambiente
+              run: |
+                echo "REPO_LOWERCASE=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+            - name: Build e push da imagem
+              uses: docker/build-push-action@v5
+              with:
+                context: .
+                push: true
+                tags: ghcr.io/${{ env.REPO_LOWERCASE }}:latest
+            
+    deploy:
+        name: Deploy para AWS EC2
+        runs-on: ubuntu-latest
+        needs: build-and-push
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Definir nome da imagem
+              run: |
+                echo "DOCKER_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:latest" >> $GITHUB_ENV
+
+            - name: Copiar docker-compose.prod.yml via SCP
+              uses: appleboy/scp-action@master
+              with:
+                host: ${{ secrets.EC2_HOST }}
+                username: ${{ secrets.EC2_USERNAME }}
+                key: ${{ secrets.EC2_SSH_KEY }}
+                source: docker-compose.prod.yml
+                target: /home/${{ secrets.EC2_USERNAME }}/ibama_api/
+
+            - name: Deploy via SSH
+              uses: appleboy/ssh-action@master
+              with:
+                host: ${{ secrets.EC2_HOST }}
+                username: ${{ secrets.EC2_USERNAME }}
+                key: ${{ secrets.EC2_SSH_KEY }}
+                script: |
+                  cd /home/${{ secrets.EC2_USERNAME }}/ibama_api
+
+                  echo "${{ secrets.PROD_ENV_FILE }}" > .env
+                  echo "DOCKER_IMAGE=${{ env.DOCKER_IMAGE }}" >> .env
+                  
+                  echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+                  docker compose -f docker-compose.prod.yml pull
+                  docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+                  docker image prune -f

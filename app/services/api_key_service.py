@@ -134,3 +134,10 @@ async def disable_api_key(
     await redis_client.delete(f"api_key:{api_key.prefix}")
 
     return api_key
+
+
+async def get_api_keys_by_user(db: AsyncSession, user_id: int) -> list[ApiKey] | None:
+    stmt = select(ApiKey).where(ApiKey.user_id == user_id)
+    result = await db.execute(stmt)
+    api_keys = result.scalars().all()
+    return api_keys

@@ -46,3 +46,22 @@ async def disable_api_key(
         )
 
     return api_key
+
+
+@router.get("/{user_id}", response_model=list[ApiKeyShow])
+async def get_api_keys_by_user(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_active_user: User = Depends(get_current_active_user),
+):
+    api_keys = await api_key_service.get_api_keys_by_user(
+        db, user_id, current_active_user
+    )
+
+    if not api_keys:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="API Keys não encontradas para o usuário.",
+        )
+
+    return api_keys
