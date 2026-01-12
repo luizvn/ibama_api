@@ -7,11 +7,11 @@
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?logo=mysql)
 ![Docker](https://img.shields.io/badge/Docker-blue?logo=docker)
 
-## 🇧🇷 Sobre o Projeto
+## Sobre o Projeto
 
 A **API IBAMA** é uma solução de backend robusta e de alta performance, projetada para a ingestão, processamento e consulta de dados públicos sobre autos de infração ambiental emitidos pelo IBAMA. O principal desafio deste projeto é o processamento eficiente de arquivos CSV de múltiplos gigabytes, garantindo que os dados sejam validados, processados e armazenados de forma assíncrona, sem impactar a disponibilidade da API.
 
-Este projeto foi construído utilizando as mais modernas ferramentas do ecossistema Python, com uma arquitetura **"Async-First"** (totalmente assíncrona) e foco em boas práticas de desenvolvimento, escalabilidade e manutenibilidade.
+Este projeto foi construído utilizando as mais modernas ferramentas do ecossistema Python, com uma arquitetura **"Async-First"** e foco em boas práticas de desenvolvimento, escalabilidade e manutenibilidade.
 
 ---
 
@@ -33,9 +33,11 @@ Os conjuntos de dados originais, em formato CSV, que servem de insumo para a fun
     3.  Ingere os dados no MySQL de forma assíncrona (`IngestionService`).
 * **Operação de Upsert Inteligente:** A lógica de ingestão utiliza o `INSERT ... ON DUPLICATE KEY UPDATE` do MySQL (via `sqlalchemy.dialects.mysql.insert`), permitindo inserir novos registros e atualizar os existentes em uma única operação atômica, garantindo a consistência dos dados.
 * **API RESTful 'Async-First':** Todos os endpoints são totalmente assíncronos (`async def`), desde a requisição web (FastAPI) até a consulta no banco de dados (SQLAlchemy 2.0 + `asyncmy`), garantindo altíssima concorrência e performance de I/O.
-* **Autenticação e Autorização Segura:** Implementação de autenticação baseada em tokens **JWT (JSON Web Tokens)** e um sistema de autorização baseado em papéis (Roles: `ADMIN`, `USER`).
+* **Autenticação Híbrida e Segura:** Sistema de segurança robusto que suporta **JWT (JSON Web Tokens)** para usuários (Roles: `ADMIN`, `USER`) e **API Keys** para acesso programático (machine-to-machine), com controle de acesso baseado em papéis (RBAC).
+* **CI/CD e Automação na AWS:** Pipeline completo de Integração e Entrega Contínua **(GitHub Actions)** configurado para realizar linting, testes automatizados e deploy automático em instâncias **AWS EC2**.
+* **Alta Performance com Redis:** Implementação de cache distribuído usando **Redis** para validação instantânea de API Keys, reduzindo drasticamente a latência e a carga no banco de dados relacional.
 * **Configuração Moderna com Dynaconf:** Gerenciamento de configurações, usando `settings.toml` para padrões e `.secrets.toml` (git-ignored) para segredos e configurações de ambiente.
-* **Ambiente Containerizado e Reprodutível:** O projeto é totalmente gerenciado pelo **Docker** e **Docker Compose**, orquestrando os containers da API, do banco de dados (MySQL) e do banco de testes.
+* **Ambiente Containerizado e Reprodutível:** O projeto é totalmente gerenciado pelo **Docker** e **Docker Compose**, orquestrando os containers da API, do banco de dados (MySQL) e do banco de testes. Contendo configuração de Docker Compose segregada (`docker-compose.prod.yml`) para ambientes produtivos, garantindo leveza e segurança.
 * **Testes de Integração:** Suíte de testes automatizados usando `Pytest` e `httpx.AsyncClient`, que rodam contra um banco de dados de teste real e isolado para validar a API e a lógica de negócio.
 
 ---
@@ -50,10 +52,13 @@ Os conjuntos de dados originais, em formato CSV, que servem de insumo para a fun
 | | **Pandas** | Utilizado para o processamento eficiente (em *chunks*) de grandes arquivos CSV. |
 | | **httpx** | Cliente HTTP assíncrono moderno, usado pelo Crawler para I/O de rede não-bloqueante. |
 | | **Typer** | Para criação do `cli.py`, o ponto de entrada do pipeline de ETL. |
-| **Banco de Dados** | **MySQL 8.0** | Banco de dados relacional principal. |
+| **Banco de Dados & Cache** | **MySQL 8.0** | Banco de dados relacional principal. |
 | | **asyncmy** | Driver MySQL assíncrono, permitindo o uso de `await` em queries. |
+| | **Redis** | Armazenamento em memória chave-valor para cache de validação de credenciais.
 | **Autenticação** | **JWT / Passlib** | Para geração de tokens de acesso seguros e hashing de senhas. |
 | **Tooling & DevOps** | **Docker & Docker Compose** | Para containerização da aplicação, banco de dados e ambiente de testes. |
+| | **GitHub Actions** | Automação de pipelines de CI (Lint/Test) e CD (Deploy AWS).
+| | **AWS EC2** | Infraestrutura de nuvem para hospedagem da aplicação em produção.
 | | **Alembic** | Ferramenta para gerenciamento de migrações de schema do banco de dados. |
 | | **Dynaconf** | Gerenciador de configurações por ambiente. |
 | | **Pytest** | Framework para testes de unidade e integração. |
@@ -106,6 +111,8 @@ SECRET_KEY="<sua_chave_secreta_de_32_bytes_aqui>"
 # Configurações do Token JWT
 ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+PORT_API=80
 ```
 
 ### 3. Iniciar o Ambiente Docker
@@ -173,7 +180,9 @@ Isso iniciará o download do arquivo .zip, processamento e ingestão no banco.
 
 * **Estrutura de Projeto Limpa:** O código é organizado seguindo princípios de *separation of concerns*, dividindo a lógica em camadas de `api` (routers), `services` (lógica de negócio), `schemas` (contratos de dados Pydantic) e `models` (ORM SQLAlchemy).
 * **Arquitetura 'Async-First':** A escolha por `async` de ponta-a-ponta (FastAPI, `httpx`, `asyncmy`) foi deliberada para maximizar a performance de I/O e a concorrência.
-* **ETL como um Processo Separado (CLI):** O pipeline de ETL (`cli.py`) é intencionalmente separado da API web (`app.main:app`). Isso evita que um processo de ingestão de dados longo e pesado trave ou consuma recursos do servidor web e também posssa ser executado como um processo "cron" independente.
+* **Cache Strategy (Redis):** Para evitar consultas repetitivas ao banco de dados na validação de API Keys (que ocorrem a cada requisição), implementamos uma camada de cache com Redis. Isso garante resposta em milissegundos e protege o banco de dados principal de picos de tráfego.
+* **CI/CD e Deploy Automatizado:** A esteira de DevOps foi desenhada para garantir confiabilidade. O GitHub Actions executa testes e linters a cada commit, e realiza o deploy automático na AWS EC2 apenas se o pipeline for aprovado, utilizando segredos seguros e Docker em produção.
+* **ETL como um Processo Separado (CLI):** O pipeline de ETL (`cli.py`) opera independentemente da API web, permitindo ingestão de grandes volumes de dados sem degradar a experiência do usuário final.
 * **Configuração com Dynaconf:** O `Dynaconf` foi escolhido por sua flexibilidade, permitindo um sistema de configuração em camadas, onde `settings.toml` define padrões e variáveis de ambiente (lidas do `.env`) sobrescrevem com segredos.
 * **Testes de Integração com Banco Real:** O `Pytest` (`conftest.py`) é configurado para rodar testes de integração contra um banco de dados de teste real (criado pelo `docker-compose` e `01-create-test-db.sql`). Isso garante que nossas queries e lógica de negócio funcionam como esperado no ambiente MySQL, indo além de mocks.
 
